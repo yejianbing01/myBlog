@@ -1,3 +1,7 @@
+---
+title: 'linux学习笔记'
+date: '2020-01-01'
+---
 # linux环境安装
 
 linux学习笔记

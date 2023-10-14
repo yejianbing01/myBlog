@@ -1,7 +1,6 @@
 ---
-title: graphQL
-date: 2020-11-04 12:37:23
-tags: graphQL
+title: 'graphQL'
+date: '2020-11-04 12:37:23'
 ---
 
 ![alt](/images/graphql.png)

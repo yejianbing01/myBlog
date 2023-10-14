@@ -1,7 +1,6 @@
 ---
-title: git学习笔记
-date: 2020-10-14 19:45:54
-tags: git
+title: 'git学习笔记'
+date: '2020-10-14 19:45:54'
 ---
 ```sh
 git config --global user.name "your name"

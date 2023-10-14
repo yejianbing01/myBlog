@@ -1,3 +1,8 @@
+---
+title: 'MongoDB'
+date: '2020-01-01'
+---
+
 # MongoDB
 
 ## 安装配置

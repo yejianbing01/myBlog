@@ -1,7 +1,6 @@
 ---
-title: Docker学习笔记
-date: 2020-12-27 15:33:57
-tags:
+title: 'Docker学习笔记'
+date: '2020-12-27 15:33:57'
 ---
 
 ## Docker基本组成

@@ -1,7 +1,6 @@
 ---
-title: jenkins环境搭建
-date: 2020-10-14 16:27:27
-tags:
+title: 'jenkins环境搭建'
+date: '2020-10-14 16:27:27'
 ---
 
 ![alt](/images/jenkins.png)
