@@ -20,6 +20,7 @@ export default function Home({ allPostsData }) {
     <Layout home>
       <Head>
         <title>{siteTitle}</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
       </Head>
       <section className={utilStyles.headingMd}>
         <p>[Your Self Introduction]</p>
