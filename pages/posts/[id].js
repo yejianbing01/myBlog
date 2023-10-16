@@ -1,10 +1,20 @@
 import Head from 'next/head';
+import { useEffect } from 'react';
 import Date from '../../components/date';
 import Layout from '../../components/layout';
 import { getAllPostIds, getPostData } from '../../lib/posts';
 import utilStyles from '../../styles/utils.module.css';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark.css';
 
 export default function Post({ postData }) {
+
+    useEffect(() => {
+        document.querySelectorAll('code').forEach(el => {
+            hljs.highlightElement(el);
+        });
+    }, []);
+
     return (
         <Layout>
             <Head>
