@@ -23,9 +23,6 @@ export default function Home({ allPostsData }) {
         <title>{siteTitle}</title>
         <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
       </Head>
-      <section className={utilStyles.headingMd}>
-        <p>我的学习笔记</p>
-      </section>
 
       <section className={`${utilStyles.headingMd} ${utilStyles.padding1px}`}>
         <h2 className={utilStyles.headingLg}>Blog</h2>
