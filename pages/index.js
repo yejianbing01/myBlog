@@ -24,11 +24,7 @@ export default function Home({ allPostsData }) {
         <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
       </Head>
       <section className={utilStyles.headingMd}>
-        <p>[Your Self Introduction]</p>
-        <p>
-          (This is a sample website - you’ll be building a site like this on{' '}
-          <a href="https://nextjs.org/learn">our Next.js tutorial</a>.)
-        </p>
+        <p>我的学习笔记</p>
       </section>
 
       <section className={`${utilStyles.headingMd} ${utilStyles.padding1px}`}>
