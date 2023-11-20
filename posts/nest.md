@@ -247,8 +247,8 @@ export class AppModule {}
     ...Process exits...
 
 ## AOP 架构
-![AOP](../public/images/aop.png)
-![AOP顺序](../public/images/aop顺序.png)
+![AOP](/images/aop.png)
+![AOP顺序](/images/aop顺序.png)
 Nest 实现 AOP 的方式更多，一共有五种，包括 
 - Middleware 中间件
 - Guard
@@ -312,7 +312,7 @@ export class AppModule implements NestModule{
 
 可以用于在调用某个 Controller 之前判断权限，返回 true 或者 false 来决定是否放行
 
-![Guard](../public/images/guard.png)
+![Guard](/images/guard.png)
 
 ```sh
 # 创建守卫
@@ -376,7 +376,7 @@ app.useGlobalGuards(new LoginGuard());
 
 ### Interceptor 拦截器
 
-![Interceptor](../public/images/interceptor.png)
+![Interceptor](/images/interceptor.png)
 
 ```sh
 # 创建拦截器
@@ -454,7 +454,7 @@ app.useGlobalInterceptors(new TimeInterceptor());
 
 ### Pipe 管道，用来对参数做一些检验和转换
 
-![pipe](../public/images/pipe.png)
+![pipe](/images/pipe.png)
 
 ```sh
 # 创建一个pipe
@@ -506,7 +506,7 @@ export class ValidatePipe implements PipeTransform {
 
 ExceptionFilter 可以对抛出的异常做处理，返回对应的响应
 
-![filter](../public/images/filter.png)
+![filter](/images/filter.png)
 
 ```sh
 # 创建一个 filter
@@ -579,7 +579,7 @@ Nest 通过这样的方式实现了异常到响应的对应关系，代码里只
 
 Middleware、Guard、Pipe、Interceptor、ExceptionFilter 都可以透明的添加某种处理逻辑到某个路由或者全部路由，这就是 AOP 的好处
 
-![aop顺序](../public/images/aop顺序.png)
+![aop顺序](/images/aop顺序.png)
 
 ### IOC AOP 总结
 
@@ -646,3 +646,12 @@ Middleware、Guard、Pipe、Interceptor、ExceptionFilter 都可以透明的添�
 - @Redirect：指定重定向的 url
 
 - @Render：指定渲染用的模版引擎
+
+### 使用 session 需要安装一个 express 中间件
+```sh
+npm install express-session
+```
+
+```js
+
+```
