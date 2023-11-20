@@ -652,6 +652,243 @@ Middleware、Guard、Pipe、Interceptor、ExceptionFilter 都可以透明的添�
 npm install express-session
 ```
 
-```js
 
+## ExecutionContext：切换不同上下文
+
+Nest 支持创建 HTTP 服务、WebSocket 服务，还有基于 TCP 通信的微服务
+
+这些不同类型的服务都需要 Guard、Interceptor、Exception Filter 功能
+
+如何让 Guard、Interceptor、Exception Filter 跨多种上下文复用呢？
+
+Nest 的解决方法是 **ArgumentHost** 和 **ExecutionContext** 类
+
+- ArgumentHost (filter)
+
+```js
+import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import { Response } from 'express';
+import { AaaException } from './AaaException';
+
+@Catch(AaaException)
+export class AaaFilter implements ExceptionFilter {
+  catch(exception: AaaException, host: ArgumentsHost) {
+
+    if(host.getType() === 'http') {
+      const ctx = host.switchToHttp();
+      const response = ctx.getResponse<Response>();
+      const request = ctx.getRequest<Request>();
+
+      response
+        .status(500)
+        .json({
+          aaa: exception.aaa,
+          bbb: exception.bbb
+        });
+    } else if(host.getType() === 'ws') {
+
+    } else if(host.getType() === 'rpc') {
+
+    }
+  }
+}
+```
+
+- ExecutionContext (guard、interceptor)
+
+ExecutionContext 是 ArgumentHost 的子类，扩展了 **getClass、getHandler** 方法
+
+可以结合 reflector 来取出其中的 metadata
+
+```js
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Observable } from 'rxjs';
+import { Role } from './role';
+
+@Injectable()
+export class AaaGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+
+    const requiredRoles = this.reflector.get<Role[]>('roles', context.getHandler());
+
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const { user } = context.switchToHttp().getRequest();
+    return requiredRoles.some((role) => user && user.roles?.includes(role));
+  }
+}
+```
+
+## 自定义装饰器
+
+自定义装饰器是对nest内置装饰器的一种扩展或组合，代码里是一定要用上内置的装饰器的，就像自定义Hooks要用useState/useEffect一样
+
+class、方法 装饰器 是组合别的装饰器的，传入参数，调用下别的装饰器就好了，比如对 @SetMetadata 的封装
+
+参数的装饰器是设置参数值
+
+- 方法的装饰器
+
+```js
+// nest g decorator aaa --flat
+import { SetMetadata } from '@nestjs/common';
+
+export const Aaa = (...args: string[]) => SetMetadata('aaa', args)
+
+// 装饰器的使用
+@Aaa
+getHello(){...}
+
+```
+
+使用 **applyDecorators** 调用其他装饰器
+
+```js
+import { applyDecorators, Get, UseGuards } from '@nestjs/common';
+import { Aaa } from './aaa.decorator';
+import { AaaGuard } from './aaa.guard';
+
+export function Bbb(path, role) {
+  return applyDecorators(
+    Get(path),
+    Aaa(role),
+    UseGuards(AaaGuard)
+  )
+}
+```
+- 参数的装饰器 内置装饰器一样，可以使用 Pipe 做参数验证和转换
+
+通过 createParamDecorator 来创建参数装饰器，它能拿到 ExecutionContext，进而拿到 reqeust、response，可以实现很多内置装饰器的功能，比如 @Query、@Headers 等装饰器
+
+```js
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const Ccc = createParamDecorator(
+  (data: string, ctx: ExecutionContext) => {
+    return 'ccc';
+  },
+);
+```
+
+## Metadata（元数据） 和 Reflector（反射器）
+
+![Reflect MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect)
+
+```js
+Reflect.defineMetadata(metadataKey, metadataValue, target);
+
+Reflect.defineMetadata(metadataKey, metadataValue, target, propertyKey);
+
+
+let result = Reflect.getMetadata(metadataKey, target);
+
+let result = Reflect.getMetadata(metadataKey, target, propertyKey);
+```
+
+装饰器的方式使用
+
+```js
+@Reflect.metadata(metadataKey, metadataValue)
+class C {
+
+  @Reflect.metadata(metadataKey, metadataValue)
+  method() {
+  }
+}
+```
+
+Reflect.metadata 装饰器再封装一层
+
+```js
+function Type(type) {
+    return Reflect.metadata("design:type", type);
+}
+function ParamTypes(...types) {
+    return Reflect.metadata("design:paramtypes", types);
+}
+function ReturnType(type) {
+    return Reflect.metadata("design:returntype", type);
+}
+
+@ParamTypes(String, Number)
+class Guang {
+  constructor(text, i) {
+  }
+
+  @Type(String)
+  get name() { return "text"; }
+
+  @Type(Function)
+  @ParamTypes(Number, Number)
+  @ReturnType(Number)
+  add(x, y) {
+    return x + y;
+  }
+}
+```
+
+Nest 的实现原理就是通过装饰器给 class 或者对象添加元数据，然后初始化的时候取出这些元数据，进行依赖的分析，然后创建对应的实例对象就可以了。
+
+所以说，nest 实现的核心就是 Reflect metadata 的 api
+
+可这个 CatsController 依赖了 CatsService，但是并没有添加 metadata。
+
+```js
+export class CatsController {
+  constructor(private readonly catsService: CatsService) {}
+
+  @Post()
+  async create(@Body() createCatDto: CreateCatDto) {
+    this.catsService.create(createCatDto);
+  }
+
+  @Get()
+  async findAll(): Promise<Cat[]> {
+    return this.catsService.findAll();
+  }
+}
+```
+
+是TypeScript 支持编译时自动添加一些 metadata 数据
+
+ts 有一个编译选项叫做 emitDecoratorMetadata，开启它就会自动添加一些元数据
+
+nest 的核心实现原理：通过装饰器给 class 或者对象添加 metadata，并且开启 ts 的 emitDecoratorMetadata 来自动添加类型相关的 metadata，然后运行的时候通过这些元数据来实现依赖的扫描，对象的创建等等功能。
+
+Nest 的装饰器都是依赖 reflect-metadata 实现的，而且还提供了一个 @SetMetadata 的装饰器让我们可以给 class、method 添加一些 metadata
+
+- 通过 reflector 获取 metadata
+
+reflector.get(key)
+reflector.getAll(key) 获取所有
+reflector.getAllAndMerge(key) 获取后合并
+reflector.getAllAndOverride(key) 获取第一个非空的 metadata
+
+## forwardRef 解决循环依赖问题
+
+- Module 循环引用
+
+```js
+import { Module, forwardRef } from '@nestjs/common';
+import { BbbModule } from '...'
+
+@Module({
+  imports: [forwardRef(() => BbbModule)]
+})
+export class AaaModule {}
+```
+
+- Service 循环引用
+
+```js
+export class CssService {
+  constructor(@Inject(forwardRef(() => DddService) private dddService: DddService ))
+}
 ```
