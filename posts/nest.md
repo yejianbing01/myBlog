@@ -892,3 +892,337 @@ export class CssService {
   constructor(@Inject(forwardRef(() => DddService) private dddService: DddService ))
 }
 ```
+
+## Dynamic Module 动态模块
+
+动态模块定义
+
+```js
+import { DynamicModule, Module } from '@nestjs/common';
+import { BbbService } from './bbb.service';
+import { BbbController } from './bbb.controller';
+
+@Module({})
+export class BbbModule {
+
+  static register(options: Record<string, any>): DynamicModule {
+    return {
+      module: BbbModule,
+      controllers: [BbbController],
+      providers: [
+        {
+          provide: 'CONFIG_OPTIONS',
+          useValue: options,
+        },
+        BbbService,
+      ],
+      exports: []
+    };
+  }
+}
+```
+
+动态模块导入
+
+```js
+@Module({
+  imports: [BbbModule.register({ a: 1, b: 2 })],
+  controllers: [BbbController]
+})
+export class AppModule {}
+
+
+export class BbbController {
+  constructor(private readonly bbbService: BbbService) {
+    @Inject('CONFIG_OPTIONS') private configOption: Record<string, any>
+  }
+}
+```
+
+```js
+import { ConfigurableModuleBuilder } from "@nestjs/common";
+
+export interface CccModuleOptions {
+    aaa: number;
+    bbb: string;
+}
+
+export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
+  new ConfigurableModuleBuilder<CccModuleOptions>().build();
+```
+
+这里的 register 方法其实叫啥都行，但 nest 约定了 3 种方法名：
+
+- register 用一次模块传一次配置
+- forRoot 配置一次模块用多次,一般在 AppModule 里 import
+- forFeature
+
+这些方法都可以写 xxxAsync 版本，也就是传入 useFactory 等 option，内部注册异步 provider。
+
+这个过程也可以用 ConfigurableModuleBuilder 来生成。通过 setClassMethodName 设置方法名，通过 setExtras 设置额外的 options 处理逻辑。
+
+并且返回的 class 都有 xxxAsync 的版本
+
+##  Nest 和 Express Fastify 的关系
+
+Nest 也有 middleware，但是它不是 Express 的 middleware，虽然都有 request、response、next 参数，但是它可以从 Nest 的 IOC 容器注入依赖，还可以指定作用于哪些路由
+
+Nest 也没有和 Express 强耦合，它做了一层抽象：
+
+1. 定义了 HttpServer 的 interface
+
+1. 然后封装了 AbstractHttpAdapter 的 abstract class
+
+1. 之后分别提供了 express 和 fastify 的实现
+
+1. Adapter 是适配器的意思，也就是说 Nest 内部并没有直接依赖任何一个 http 处理的库，只是依赖了抽象的接口，想用什么库需要实现这些接口的适配器
+
+1. 这俩适配器分别在 @nestjs/platform-express 和 @nestjs/platform-fastify 的包里
+
+切换到 fastify
+
+```js
+// npm install fastify @nestjs/platform-fastify
+import { FastifyAdapter } from '@nestjs/platform-fastify'
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
+  await app.listen(3000);
+}
+```
+
+## Rxjs
+
+rxjs 是一个处理异步逻辑的库，它的特点就是 operator 多，你可以通过组合 operator 来完成逻辑，不需要自己写。
+
+nest 的 interceptor 就用了 rxjs 来处理响应，但常用的 operator 也就这么几个：
+
+  1. tap: 不修改响应数据，执行一些额外逻辑，比如记录日志、更新缓存等
+  1. map：对响应数据做修改，一般都是改成 {code, data, message} 的格式
+  1. catchError：在 exception filter 之前处理抛出的异常，可以记录或者抛出别的异常
+  1. timeout：处理响应超时的情况，抛出一个 TimeoutError，配合 catchErrror 可以返回超时的响应
+
+总之，rxjs 的 operator 多，但是适合在 nest interceptor 里用的也不多。
+
+此外，interceptor 也是可以注入依赖的，你可以通过注入模块内的各种 provider。
+
+全局 interceptor 可以通过 APP_INTERCEPTOR 的 token 声明，这种能注入依赖，比 app.useGlobalInterceptors 更好。
+
+## ValidationPipe 验证 post 请求参数
+
+```sh
+npm install class-validator class-transformer
+```
+
+- class-validator 包提供了基于装饰器声明的规则对对象做校验的功能
+
+- class-transformer 则是把一个普通对象转换为某个 class 的实例对象的
+
+声明了参数的类型为 dto 类，pipe 里拿到这个类，把参数对象通过 class-transformer 转换为 dto 类的对象，之后再用 class-validator 包来对这个对象做验证
+
+## 自定义 Exception Filter 自定义异常时返回的响应格式
+
+```js
+// nest g filter hello --flat --no-spec
+
+import { ArgumentsHost, BadRequestException, Catch, ExceptionFilter, HttpException, Inject } from '@nestjs/common';
+import { Response } from 'express';
+import { AppService } from './app.service';
+
+@Catch(HttpException)
+export class HelloFilter implements ExceptionFilter {
+
+  @Inject(AppService)
+  private service: AppService;
+
+  catch(exception: HttpException, host: ArgumentsHost) {
+    const http = host.switchToHttp();
+    const response = http.getResponse<Response>();
+
+    const statusCode = exception.getStatus();
+
+    const res = exception.getResponse() as { message: string[] }; // 支持 ValidationPipe 抛出的异常
+    
+    response.status(statusCode).json({
+       code: statusCode,
+       message: res?.message?.join ? res?.message?.join(',') : exception.message, // 支持 ValidationPipe 抛出的异常
+       error: 'Bad Request',
+       xxx: 111,
+       yyy: this.service.getHello()
+    })
+  }
+}
+
+```
+
+自定义 Exception
+
+```js
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
+
+export class UnLoginException{
+  message: string;
+
+  constructor(message?){
+    this.message = message;
+  }
+}
+
+@Catch(UnLoginException)
+export class UnloginFilter implements ExceptionFilter {
+  catch(exception: UnLoginException, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse<Response>();
+
+    response.status(HttpStatus.UNAUTHORIZED).json({
+      code: HttpStatus.UNAUTHORIZED,
+      message: 'fail',
+      data: exception.message || '用户未登录'
+    }).end();
+  }
+}
+```
+
+## multer 实现文件上传
+
+```sh
+npm install -D @types/multer
+```
+单文件上传
+
+```js
+@Post('aaa')
+@UseInterceptors(FileInterceptor('aaa', {
+    dest: 'uploads'
+}))
+uploadFile(@UploadedFile() file: Express.Multer.File, @Body() body) {
+    console.log('body', body);
+    console.log('file', file);
+}
+```
+
+多文件上传 FileInterceptor 换成 FilesInterceptor，把 UploadedFile 换成 UploadedFiles，都是多加一个 s
+
+```js
+@Post('bbb')
+@UseInterceptors(FilesInterceptor('bbb', 3, {
+    dest: 'uploads'
+}))
+uploadFiles(@UploadedFiles() files: Array<Express.Multer.File>, @Body() body) {
+    console.log('body', body);
+    console.log('files', files);
+}
+
+```
+
+多个文件字段
+
+```js
+@Post('ccc')
+@UseInterceptors(FileFieldsInterceptor([
+    { name: 'aaa', maxCount: 2 },
+    { name: 'bbb', maxCount: 3 },
+], {
+    dest: 'uploads'
+}))
+uploadFileFields(@UploadedFiles() files: { aaa?: Express.Multer.File[], bbb?: Express.Multer.File[] }, @Body() body) {
+    console.log('body', body);
+    console.log('files', files);
+}
+```
+
+并不知道有哪些字段是 file 时可以用 AnyFilesInterceptor
+
+```js
+@Post('ddd')
+@UseInterceptors(AnyFilesInterceptor({
+    dest: 'uploads'
+}))
+uploadAnyFiles(@UploadedFiles() files: Array<Express.Multer.File>, @Body() body) {
+    console.log('body', body);
+    console.log('files', files);
+}
+```
+
+指定 storage
+
+```js
+import * as multer from "multer";
+import * as fs from 'fs';
+import * as path from "path";
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        try {
+            fs.mkdirSync(path.join(process.cwd(), 'my-uploads'));
+        }catch(e) {}
+
+        cb(null, path.join(process.cwd(), 'my-uploads'))
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) + '-' + file.originalname
+        cb(null, file.fieldname + '-' + uniqueSuffix)
+    }
+});
+
+export { storage };
+```
+
+添加检查文件大小的逻辑
+
+```js
+// 自定义检查逻辑
+import { PipeTransform, Injectable, ArgumentMetadata, HttpException, HttpStatus } from '@nestjs/common';
+
+@Injectable()
+export class FileSizeValidationPipe implements PipeTransform {
+  transform(value: Express.Multer.File, metadata: ArgumentMetadata) {
+    if(value.size > 10 * 1024) {
+      throw new HttpException('文件大于 10k', HttpStatus.BAD_REQUEST);
+    }
+    return value;
+  }
+}
+```
+
+文件大小、类型的校验这种逻辑太过常见，Nest 给封装好了，可以直接用
+
+```js
+@Post('fff')
+@UseInterceptors(FileInterceptor('aaa', {
+    dest: 'uploads'
+}))
+uploadFile3(@UploadedFile(new ParseFilePipe({
+    validators: [
+      new MaxFileSizeValidator({ maxSize: 1000 }),
+      new FileTypeValidator({ fileType: 'image/jpeg' }),
+    ],
+})) file: Express.Multer.File, @Body() body) {
+    console.log('body', body);
+    console.log('file', file);
+}
+```
+
+自己实现这样的 validator
+
+```js
+import { FileValidator } from "@nestjs/common";
+
+export class MyFileValidator extends FileValidator{
+    constructor(options) {
+        super(options);
+    }
+
+    isValid(file: Express.Multer.File): boolean | Promise<boolean> {
+        if(file.size > 10000) {
+            return false;
+        }
+        return true;
+    }
+    buildErrorMessage(file: Express.Multer.File): string {
+        return `文件 ${file.originalname} 大小超出 10k`;
+    }
+}
+```
+
+## winston 自定义日志
