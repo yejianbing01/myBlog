@@ -1367,3 +1367,31 @@ nest g resource email
 
 npm install nodemailer --save
 ```
+
+### 配置拆分
+
+```sh
+npm install --save @nestjs/config
+```
+```js
+// appModule中导入
+
+ConfigModule.forRoot({
+  isGlobal: true,
+  envFilePath: 'src/.env'
+})
+```
+
+再 nest-cli.json 里加一下 编译配置
+```js
+// asssets 是指定 build 时复制的文件，watchAssets 是在 assets 变动之后自动重新复制
+{
+  "compilerOptions": {
+      ...,
+      "watchAssets": true,
+      "assets": [
+        "**/*.env"
+      ]
+  }
+}
+```
