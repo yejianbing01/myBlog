@@ -348,6 +348,28 @@ docker 命令 --help          # 帮助命令
   ONBUILD：用于设置镜像触发器
   ```
 
+使用 ARG 增加构建灵活性，ARG 可以在 docker build 时通过 --build-arg xxx=yyy 传入，在 dockerfile 中生效，可以使构建过程更灵活。如果是想定义运行时可以访问的变量，可以通过 ENV 定义环境变量，值使用 ARG 传入
+
+```sh
+FROM node:18-alpine3.14
+
+ARG aaa
+ARG bbb
+
+WORKDIR /app
+
+COPY ./test.js .
+
+ENV aaa=${aaa} \
+    bbb=${bbb}
+
+CMD ["node", "/app/test.js"]
+```
+
+```sh
+docker build --build-arg aaa=3 --build-arg bbb=4 -t arg-test -f 333.Dockerfile .
+```
+
 ## Docker 网络
 
 
