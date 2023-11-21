@@ -1226,3 +1226,144 @@ export class MyFileValidator extends FileValidator{
 ```
 
 ## winston 自定义日志
+
+## PM2 执行node
+
+pm2 是 process manager，进程管理，它是第二个大版本，和前一个版本差异很大，所以叫 pm2.
+
+pm2 的主要功能就是进程管理、日志管理、负载均衡、性能监控这些。
+
+```sh
+npm install -g pm2
+
+pm2 start ./dist/main.js
+
+# 超过 200M 内存自动重启
+pm2 start xxx --max-memory-restart 200M
+
+# 从 2s 开始每 3s 重启一次
+pm2 start xxx --cron-restart "2/3 * * * * *"
+
+# 当文件内容改变自动重启
+pm2 start xxx --watch
+
+# 不自动重启
+pm2 start xxx --no-autorestart
+
+# 删掉进程
+pm2 delete 0
+
+# 清空日志
+pm2 flush 或者 pm2 flush 进程名|id
+
+#  ~/.pm2/logs 下，以“进程名-out.log”和“进程名-error.log”分别保存不同进程的日志
+pm2 logs
+
+```
+
+再就是负载均衡，node 应用是单进程的，而为了充分利用多核 cpu，我们会使用多进程来提高性能。
+
+node 提供的 cluster 模块就是做这个的，pm2 就是基于这个实现了负载均衡。
+
+我们只要启动进程的时候加上 -i num 就是启动 num 个进程做负载均衡的意思
+
+```sh
+# -i 启动 cpu 数量的进程
+pm2 start app.js -i max 
+pm2 start app.js -i 0
+
+# 动态调整进程数
+pm2 scale main 3
+
+# 增加3个进程
+pm2 scale main +3
+```
+
+性能监控
+
+```sh
+pm2 monit
+```
+
+pm2 start ecosystem.config.js 
+
+一般都是 docker 镜像内安装 pm2 来跑 node
+
+## MySQL
+
+## TypeORM
+
+## Redis
+
+## JWT
+
+## 权限控制
+
+## Nginx
+
+
+## 项目-会议室预定系统
+
+```sh
+nest new meeting_room_booking_system_backend
+
+# 安装 typeorm 相关的包
+npm install --save @nestjs/typeorm typeorm mysql2
+
+```
+
+在 AppModule 引入 TypeOrmModule：
+```js
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+@Module({
+  imports: [ 
+    TypeOrmModule.forRoot({
+      type: "mysql",
+      host: "localhost",
+      port: 3306,
+      username: "root",
+      password: "20090909",
+      database: "meeting_room_booking_system",
+      synchronize: true,
+      logging: true,
+      entities: [],
+      poolSize: 10,
+      connectorPackage: 'mysql2',
+      extra: {
+          authPlugin: 'sha256_password',
+      }
+    }),
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+```
+
+自动创建模块
+```sh
+nest g resource user
+```
+
+dto参数验证
+```sh
+npm install --save class-validator class-transformer
+```
+
+redis
+```sh
+nest g module redis
+nest g service redis
+npm install --save redis
+```
+
+邮件
+```sh
+nest g resource email
+
+npm install nodemailer --save
+```

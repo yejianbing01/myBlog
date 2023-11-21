@@ -259,6 +259,13 @@ docker 命令 --help          # 帮助命令
     ro    readonly  # 只读
     rw    readwrite # 可读可写
     ```
+
+restart 有 4 种重启策略：
+  - no: 容器退出不自动重启（默认值）
+  - always：容器退出总是自动重启，除非 docker stop。
+  - on-failure：容器非正常退出才自动重启，还可以指定重启次数，如 on-failure:5
+  - unless-stopped：容器退出总是自动重启，除非 docker stop
+
 ### 容器实例
 
 * 部署 ES + kibana
