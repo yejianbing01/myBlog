@@ -60,8 +60,8 @@ export default function Layout({ children, home }) {
             </header>
             <main>{children}</main>
             {!home && (
-                <div className={styles.backToHome}>
-                    <Link href="/">cd ..</Link>
+                <div className={styles.backToHome} onClick={() => history.back()}>
+                    <span>返回上级</span>
                 </div>
             )}
         </div>

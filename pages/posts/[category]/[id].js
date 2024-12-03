@@ -8,9 +8,24 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 
 
+export async function getStaticPaths() {
+    const paths = getPathPost();
+    return {
+        paths,
+        fallback: false,
+    };
+}
+
+export async function getStaticProps({ params }) {
+    const postData = await getPostData(params.id, params.category);
+    return {
+        props: {
+            postData,
+        },
+    };
+}
 
 export default function Post({ postData }) {
-
     useEffect(() => {
         document.querySelectorAll('code').forEach(el => {
             hljs.highlightElement(el);
@@ -31,30 +46,4 @@ export default function Post({ postData }) {
             </article>
         </Layout>
     );
-}
-
-// export async function getStaticPaths() {
-//     const paths = getAllPostIds();
-//     return {
-//         paths,
-//         fallback: false,
-//     };
-// }
-
-export async function getStaticPaths() {
-    const paths = getPathPost();
-    return {
-        paths,
-        fallback: false,
-    };
-}
-
-
-export async function getStaticProps({ params }) {
-    const postData = await getPostData(params.id, params.category);
-    return {
-        props: {
-            postData,
-        },
-    };
 }

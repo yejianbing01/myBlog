@@ -28,7 +28,7 @@ export default function Home({ allCategory }) {
         <h2 className={utilStyles.headingLg}>Blog</h2>
         <ul className={utilStyles.list}>
           {allCategory.map((category) => (
-            <li className={utilStyles.listItem} key={id}>
+            <li className={utilStyles.listItem} key={category}>
               <Link href={`/posts/${category}`}>{category}</Link>
               {/* <br />
               <small className={utilStyles.lightText}>

@@ -2,32 +2,23 @@
 import fs from 'fs';
 import path from 'path';
 import Link from 'next/link';
-const defaultCategoryName = '默认目录';
+import Layout from '../../../components/layout';
+
 
 export async function getStaticPaths() {
     const categoryDir = path.join(process.cwd(), 'posts');
-    const categories = fs.readdirSync(categoryDir);
-    const categoryDirList = [];
-    const defaultPosts = [];
-
-    categories.forEach(item => {
-        item.endsWith('.md') ? defaultPosts.push(item) : categoryDirList.push(item)
-    })
-    const paths = categoryDirList.map((category) => ({
-        params: { category },
-    }));
-    if (defaultPosts.length) {
-        paths.push({ params: { category: defaultCategoryName, posts: defaultPosts } })
-    }
+    const categoryNames = fs.readdirSync(categoryDir);
     return {
-        paths,
+        paths: categoryNames.map((category) => ({
+            params: { category },
+        })),
         fallback: false,
     };
 }
 
 export async function getStaticProps({ params }) {
     const category = params.category;
-    const posts = category == defaultCategoryName ? params.posts : fs.readdirSync(path.join('posts', category));
+    const posts = fs.readdirSync(path.join('posts', category));
     return {
         props: {
             category,
@@ -38,17 +29,15 @@ export async function getStaticProps({ params }) {
 
 export default function CategoryPage({ category, posts }) {
     return (
-        <div>
+        <Layout>
             <h1>{category}</h1>
             <ul>
                 {posts.map((post) => (
                     <li key={post}>
-                        <Link href={category == defaultCategoryName ? `/${post}` : `/${category}/${post}`}>
-                            <a>{post}</a>
-                        </Link>
+                        <Link href={`/posts/${category}/${post}`}>{post}</Link>
                     </li>
                 ))}
             </ul>
-        </div>
+        </Layout>
     );
 }
