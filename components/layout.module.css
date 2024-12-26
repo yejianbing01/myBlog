@@ -2,12 +2,6 @@
   max-width: 56rem;
   padding: 0 1rem;
   margin: 3rem auto 6rem;
-  /*
-  * Created with https://www.css-gradient.com
-  * Gradient link: https://www.css-gradient.com/?c1=5bc35f&c2=aa42a7&gt=r&gd=dtl
-  */
-  background: rgba(91, 195, 95, 1.0);
-  background: radial-gradient(at left top, rgba(91, 195, 95, 1.0), rgba(170, 66, 167, 1.0));
 }
 
 .header {

@@ -6,6 +6,12 @@ body {
     Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   line-height: 1.6;
   font-size: 16px;
+    /*
+  * Created with https://www.css-gradient.com
+  * Gradient link: https://www.css-gradient.com/?c1=5bc35f&c2=aa42a7&gt=r&gd=dtl
+  */
+  background: rgba(91, 195, 95, 1.0);
+  background: radial-gradient(at left top, rgba(91, 195, 95, 1.0), rgba(170, 66, 167, 1.0));
 }
 
 * {
